@@ -2,12 +2,14 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8"
     pageEncoding="UTF-8"%>
 <%@ page import="bbs.BbsDAO" %>
+<%@ page import="bbs.Bbs" %>
 <%@ page import="java.io.PrintWriter" %> <!-- 자바스크립트 문장사용 -->
 <% request.setCharacterEncoding("UTF-8"); %> <!-- 건너오는 모든 파일을 UTF-8로 -->
-<!-- id 등 BBS로  -->
+<!-- 자바 빈즈들 삭제 -->
+<%-- <!-- id 등 BBS로  -->
 <jsp:useBean id="bbs" class="bbs.Bbs" scope="page"/>
 <jsp:setProperty name="bbs" property="bbsTitle" />
-<jsp:setProperty name="bbs" property="bbsContent" />
+<jsp:setProperty name="bbs" property="bbsContent" /> --%>
  
 <!DOCTYPE html>
 <html>
@@ -31,26 +33,52 @@
             script.println("alert('로그인을 하세요')");
             script.println("location.href = 'login.jsp'");
             script.println("</script>");
-        } else {
-        if(bbs.getBbsTitle() == null || bbs.getBbsContent() == null) {
+        }
+        int bbsID = 0;
+        if (request.getParameter("bbsID") != null)
+        {
+            bbsID = Integer.parseInt(request.getParameter("bbsID"));
+        }
+        if (bbsID == 0)
+        {
             PrintWriter script = response.getWriter();
             script.println("<script>");
-            script.println("alert('입력이 안된 사항이 있습니다.')"); /* 이전 페이지로 사용자를 돌려보냄  */
+            script.println("alert('유효하지 않은 글입니다')");
+            script.println("location.href = 'bbs.jsp'");
+            script.println("</script>");
+        }
+        Bbs bbs = new BbsDAO().getBbs(bbsID);
+        if (!userID.equals(bbs.getUserID()))
+        {
+            PrintWriter script = response.getWriter();
+            script.println("<script>");
+            script.println("alert('권한이 없습니다')");
+            script.println("location.href = 'bbs.jsp'");
+            script.println("</script>");
+        }else {
+        	/* 이렇게 널 값이거나 혹은 빈인게 하나라도 있는 경우 입력이 안 된 사항이 있다고 이렇게 알려줌으로써 다시 사용자가 입력하도록 
+        	만들어 줄 수 있음 
+        	*/
+        if(request.getParameter("bbsTitle") == null || request.getParameter("bbsContent") == null
+        		|| request.getParameter("bbsTitle").equals("") || request.getParameter("bbsContent").equals("")) {
+            PrintWriter script = response.getWriter();
+            script.println("<script>");
+            script.println("alert('입력이 안된 사항이 있습니다.')");
             script.println("history.back()");
             script.println("</script>");
         } else {
-        	// 그게 아니라면 db로 넘겨
             BbsDAO bbsDAO = new BbsDAO();
-            int result = bbsDAO.write(bbs.getBbsTitle(), userID, bbs.getBbsContent());
-          		//db 오류 
-                if(result == -1){ // 글쓰기에 실패했을 경우
+            
+            /* 업데이트로 바꿔주고, 제목과 내용을 넣어줌  */
+            int result = bbsDAO.update(bbsID, request.getParameter("bbsTitle"), request.getParameter("bbsContent"));
+                if(result == -1){ // 글수정에 실패했을 경우
                     PrintWriter script = response.getWriter(); //하나의 스크립트 문장을 넣을 수 있도록.
                     script.println("<script>");
-                    script.println("alert('글쓰기에 실패했습니다.')"); //db 오류 
+                    script.println("alert('글 수정에 실패했습니다.')");
                     script.println("history.back()");
                     script.println("</script>");
                 }
-                else { // 글쓰기에 성공했을 경우 , 메인화면으로 이동 
+                else { // 글수정에 성공했을 경우
                     PrintWriter script = response.getWriter();
                     script.println("<script>");
                     script.println("location.href= 'bbs.jsp'");
@@ -61,3 +89,4 @@
     %>
 </body>
 </html> 
+
